@@ -9,7 +9,7 @@
         <el-input id="host" v-model="form.host"></el-input>
       </el-form-item>
       <el-form-item label="port">
-        <el-input-number id="port" v-model="form.port"></el-input-number>
+        <el-input id="port" v-model="form.port"></el-input>
       </el-form-item>
       <el-form-item label="username">
         <el-input id="username" v-model="form.username"></el-input>
