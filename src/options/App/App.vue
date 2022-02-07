@@ -100,7 +100,7 @@ export default {
               singleProxy: {
                 scheme,
                 host,
-                port,
+                port: parseInt(port),
               },
               // 域名地址
               bypassList: ["*.mimvp.com"],
