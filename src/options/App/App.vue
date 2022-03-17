@@ -140,7 +140,7 @@ export default {
       );
     },
     chromePrxoy() {
-      const { scheme, host, port, username, password } = this.form;
+      const { scheme, host, port, username, password, sn } = this.form;
       console.log(
         "🚀 ~ file: App.vue ~ line 85 ~ chromePrxoy ~ this.form",
         this.form
@@ -150,7 +150,7 @@ export default {
       });
       // 保存数据
       chrome.storage.local.set(
-        { scheme, host, port, username, password },
+        { scheme, host, port, username, password, sn },
         function () {
           console.log("保存成功！");
         }
