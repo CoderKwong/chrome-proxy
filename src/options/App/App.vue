@@ -17,8 +17,14 @@
       <el-form-item label="password">
         <el-input id="password" v-model="form.password"></el-input>
       </el-form-item>
+      <el-form-item label="sn">
+        <el-input id="sn" v-model="form.sn"></el-input>
+      </el-form-item>
       <el-form-item>
         <el-button id="save" type="primary" @click="onSubmit">保存</el-button>
+        <el-button id="change" type="primary" @click="changePorxy"
+          >更换代理ip</el-button
+        >
         <el-button id="clear" type="primary" @click="clear">清除代理</el-button>
       </el-form-item>
     </el-form>
@@ -26,6 +32,9 @@
 </template>
 
 <script>
+import axios from "axios";
+import { Message } from "element-ui";
+
 export default {
   name: "app",
   data() {
@@ -36,6 +45,7 @@ export default {
         port: 80,
         username: "",
         password: "",
+        sn: "",
       },
     };
   },
@@ -45,7 +55,12 @@ export default {
       ["scheme", "host", "port", "username", "password"],
       (items) => {
         console.log(items);
-        this.form = items;
+        this.form.scheme = items.scheme || "http";
+        this.form.host = items.host || "35.171.2.66";
+        this.form.port = items.port || "2333";
+        this.form.username = items.username || "";
+        this.form.password = items.password || "";
+        this.form.sn = items.sn || "";
       }
     );
 
@@ -66,22 +81,70 @@ export default {
   methods: {
     clear() {
       chrome.proxy.settings.clear({}, function () {});
-      console.log("清除代理成功");
+      Message.success("清除代理成功");
     },
     onSubmit() {
       console.log("submit!");
-      this.$refs["form"].validate((valid) => {
+      this.$refs["form"].validate(async (valid) => {
         if (valid) {
           console.log(this.form);
           this.chromePrxoy();
         } else {
-          console.log("error submit!!");
+          Message.error("error submit!!");
           return false;
         }
       });
     },
+    async changePorxy() {
+      const session = this.form.username.match(/-session-(\w+)/)[1];
+      const sn = this.form.sn;
+      const account = this.form.username.split("-")[0];
+      this.cleanChrome();
+      this.$refs["form"].validate(async (valid) => {
+        if (valid) {
+          console.log(this.form);
+          const res = await axios.get(
+            `http://tiqu.ipidea.io/changeAccountSession?sn=${sn}&account=${account}&session=${session}`
+          );
+          if (res.status === 200 && res.data.Code === 0) {
+            console.log(res);
+            Message.success("更换代理成功!");
+            setTimeout(() => {
+              Message.closeAll();
+            }, 1000);
+          } else {
+            console.log("error");
+          }
+        } else {
+          Message.error("error submit!!");
+          return false;
+        }
+      });
+      this.onSubmit();
+    },
+    cleanChrome() {
+      const data = {
+        cookies: true,
+      };
+      chrome.browsingData.remove(
+        {
+          originTypes: {
+            extension: true,
+          },
+        },
+        data,
+        function () {
+          //弹出框
+          Message.success("清理缓存成功!");
+        }
+      );
+    },
     chromePrxoy() {
       const { scheme, host, port, username, password } = this.form;
+      console.log(
+        "🚀 ~ file: App.vue ~ line 85 ~ chromePrxoy ~ this.form",
+        this.form
+      );
       chrome.proxy.onProxyError.addListener((errr) => {
         console.log("🚀 ~ file: App.vue ~ line 82 ~ chromePrxoy ~ errr", errr);
       });
@@ -103,7 +166,7 @@ export default {
                 port: parseInt(port),
               },
               // 域名地址
-              bypassList: ["*.mimvp.com"],
+              bypassList: ["*.ipidea.io", "2captcha.com", "*.2captcha.com"],
             },
           },
           scope: "regular",
@@ -117,20 +180,22 @@ export default {
       );
 
       chrome.webRequest.onAuthRequired.addListener(
-        function (details) {
+        (details, asyncCallback) => {
           console.log(
             "🚀 ~ file: App.vue ~ line 100 ~ chromePrxoy ~ details",
+            username,
+            password,
             details
           );
-          return {
+          asyncCallback({
             authCredentials: {
               username,
               password,
             },
-          };
+          });
         },
         { urls: ["<all_urls>"] },
-        ["blocking"]
+        ["asyncBlocking"]
       );
     },
   },
